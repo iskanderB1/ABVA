@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "MainWeaponUI.generated.h"
+#include "MainPlayerUI.generated.h"
 
 
 
