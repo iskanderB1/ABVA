@@ -1,0 +1,47 @@
+@echo off
+setlocal enabledelayedexpansion
+
+:: Get the directory where this script is located
+set "SCRIPT_DIR=%~dp0"
+
+:: Look for a .uproject file in the current directory
+set "PROJECT_FILE="
+for %%F in ("%SCRIPT_DIR%*.uproject") do (
+    set "PROJECT_FILE=%%~fF"
+    goto :FoundProject
+)
+
+:: If the loop finishes without jumping, no .uproject was found
+echo [ERROR] No .uproject file was found in "%SCRIPT_DIR%"
+pause
+exit /b 1
+
+:FoundProject
+echo Found project file: "%PROJECT_FILE%"
+echo.
+echo The following command is about to be executed:
+echo "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" -projectfiles -project="%PROJECT_FILE%" -game -rocket -progress
+echo.
+
+:: Prompt the user for confirmation
+choice /C YN /M "Do you want to proceed?"
+
+:: Errorlevel 2 corresponds to 'N'
+if errorlevel 2 (
+    echo.
+    echo Operation cancelled by user.
+    pause
+    exit /b 0
+)
+
+:: Errorlevel 1 corresponds to 'Y'
+if errorlevel 1 (
+    echo.
+    echo Executing Unreal Engine Build Tool...
+    call "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" -projectfiles -project="%PROJECT_FILE%" -game -rocket -progress
+    
+    echo.
+    echo Process finished.
+    pause
+    exit /b 0
+)
