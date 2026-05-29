@@ -1,20 +1,20 @@
 #include "AbvaPlayer.h"
+
 #include "Components/AudioComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
-#include "Abva/Player/AbvaMovement.h"
-#include "Abva/Interaction/IInteractableItem.h"
-#include "Abva/Item/ItemManager.h"
-#include "Abva/Item/Item.h"
 #include "Components/CapsuleComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
 
-#if WITH_EDITOR
+#include "Abva/Player/AbvaMovement.h"
+#include "Abva/Interaction/IInteractableItem.h"
+#include "Abva/Item/ItemManager.h"
+#include "Abva/Item/Item.h"
+
 #include "ABVA/Dev/Dev.h"
-#endif //WITH_EDITOR
 
 AAbvaPlayer::AAbvaPlayer(const FObjectInitializer& initializer)
 	:Super(initializer.SetDefaultSubobjectClass<UAbvaMovement>(ACharacter::CharacterMovementComponentName))
@@ -34,16 +34,6 @@ AAbvaPlayer::AAbvaPlayer(const FObjectInitializer& initializer)
 	bUseControllerRotationRoll = false;
 }
 
-double AAbvaPlayer::GetJumpHoldTime() const
-{
-	//if JumpTimerStamp is less than -1 that means the player had let go of jump the last tick
-	if (JumpTimeStamp < 0)
-	{
-		return -1;
-	}
-	return GetWorld()->TimeSince(JumpTimeStamp);
-}
-
 auto AAbvaPlayer::GetMovement() const
 {
 	return CastChecked<UAbvaMovement>(GetCharacterMovement());
@@ -52,6 +42,16 @@ auto AAbvaPlayer::GetMovement() const
 auto AAbvaPlayer::GetPlayerController() const
 {
 	return CastChecked<APlayerController>(GetController());
+}
+
+double AAbvaPlayer::GetJumpHoldTime() const
+{
+	//if JumpTimerStamp is less than -1 that means the player had let go of jump the last tick
+	if (JumpTimeStamp < 0)
+	{
+		return -1;
+	}
+	return GetWorld()->TimeSince(JumpTimeStamp);
 }
 
 void AAbvaPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -99,11 +99,13 @@ void AAbvaPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void AAbvaPlayer::BeginPlay()
 {
-	check(SpeedLineMaterial != nullptr);
-
+	Super::BeginPlay();
+	if (!ensureMsgf(SpeedLineMaterial != nullptr, TEXT("player's speed line arent set!")))
+	{
+		return;
+	}
 	SpeedLineMat = UMaterialInstanceDynamic::Create(SpeedLineMaterial, this);
 	Cam->PostProcessSettings.AddBlendable(SpeedLineMat, 1);
-	Super::BeginPlay();
 }
 
 void AAbvaPlayer::Tick(float deltaTick)
@@ -146,7 +148,7 @@ bool AAbvaPlayer::CanWallrun() const
 			&& FVector(movement->Velocity.X, movement->Velocity.Y, 0).Length() > 300.0;
 }
 
-void AAbvaPlayer::HandleWallrun() const
+void AAbvaPlayer::HandleWallrun()
 {
 	auto Capsule = GetCapsuleComponent();
 	auto movement = GetMovement();
@@ -180,9 +182,9 @@ void AAbvaPlayer::HandleWallrun() const
 			FCollisionQueryParams Params;
 			Params.AddIgnoredActor(this);
 
-    			auto debug = Dev::TraceDev::DevSweepSingleByChannel(GetWorld(), WallHit, Capsule->GetComponentLocation(),
-				Capsule->GetComponentLocation() + Capsule->GetRightVector() * TraceDir * (Capsule->GetScaledCapsuleRadius() + 40.f),
-				FQuat::Identity, ECC_WorldStatic, FCollisionShape::MakeCapsule(FVector(20.f, 20.f, 40.f)), Params);
+    		auto debug = Dev::TraceDev::DevSweepSingleByChannel(GetWorld(), WallHit, Capsule->GetComponentLocation(),
+			Capsule->GetComponentLocation() + Capsule->GetRightVector() * TraceDir * (Capsule->GetScaledCapsuleRadius() + 40.f),
+			FQuat::Identity, ECC_WorldStatic, FCollisionShape::MakeCapsule(FVector(20.f, 20.f, 40.f)), Params);
 			if (debug)
 			{
 				if (FMath::IsWithinInclusive(abs(WallHit.ImpactNormal.Z), 0.f, 0.2f))
@@ -208,7 +210,7 @@ void AAbvaPlayer::HandleWallrun() const
 		movement->WallrunAbort(false);
 	}
 }
-//TODO: make sure to make the "get hold jump time" func thing. ok thank thank you i love :) xoxoxo
+//TODO: make sure to make the "get hold jump time" func thing. ok thank you, thank you i love :) xoxoxo
 void AAbvaPlayer::HandleSpeedLines(float deltaTime) const
 {
 	float speedLineOpacity;
@@ -370,13 +372,10 @@ void AAbvaPlayer::Interact(const FInputActionValue& Value)
 		FCollisionQueryParams params(FName("Debug trace"), false, this);
 		if (GetWorld()->LineTraceSingleByChannel(result, start, end, ECollisionChannel::ECC_Camera, params))
 		{
-			if (auto item = Cast<IInteractableItem>(result.GetActor()))
+			AActor* HitActor = result.GetActor();
+			if (IsValid(HitActor) && HitActor->Implements<UInteractableItem>())
 			{
-				item->Interact_Implementation();
-			}
-			if (result.GetActor()->Implements<UInteractableItem>())
-			{
-				IInteractableItem::Execute_Interact(result.GetActor());
+				IInteractableItem::Execute_Interact(HitActor);
 			}
 		}
 	}
@@ -411,4 +410,3 @@ void AAbvaPlayer::PCrouch(const FInputActionValue& Value)
 		UnCrouch();
 	}
 }
-

@@ -8,13 +8,16 @@ class UInputMappingContext;
 class UInputAction;
 class UAbvaMovement;
 class UItemManager;
+class AAbvaController;
 struct FInputActionValue;
+
 
 UCLASS()
 class AAbvaPlayer : public ACharacter
 {
     GENERATED_BODY()
 
+	friend AAbvaController;
 	friend UAbvaMovement;
 
     AAbvaPlayer(const FObjectInitializer& initializer);
@@ -108,6 +111,8 @@ protected:
 	virtual void Jump() override;
 	virtual void StopJumping() override;
 	virtual void Landed(const FHitResult& floor) override;
+
+	double GetJumpHoldTime() const;
 public:
 	virtual void GetActorEyesViewPoint(FVector& outLocation, FRotator& outRotation) const override;
 	
@@ -117,13 +122,10 @@ private:
 private:
 	double JumpTimeStamp = -1;
 
-public:
-	double GetJumpHoldTime() const;
-
 private:
 	auto GetMovement() const;
 	auto GetPlayerController() const;
 	bool CanWallrun() const;
-	void HandleWallrun() const;
+	void HandleWallrun();
 	void HandleSpeedLines(float deltaTime) const;
 };

@@ -5,15 +5,12 @@
 #include "WeaponLogicComponent/WeaponLogicComponent.h"
 #include "Components/BoxComponent.h"
 #include "Camera/CameraComponent.h"
-#include "Abva/Player/AbvaPlayer.h"
 #include "Abva/Item/Item.h"
 #include "Abva/Item/ItemManager.h"
-#include "Abva/UI/WeaponHud.h"
+#include "WeaponData.h"
 
 AWeaponBase::AWeaponBase()
 {
-	PrimaryActorTick.bCanEverTick = false;
-
 	WeaponLogic = CreateDefaultSubobject<UWeaponLogicComponent>(FName("WeaponLogic"));
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(FName("WeaponMesh"));
 	PickBoxCollision = CreateDefaultSubobject<UBoxComponent>(FName("BoxCollision"));
@@ -32,21 +29,23 @@ void AWeaponBase::BeginPlay()
 	Item->OnTertiaryInteract.BindUObject(this, &AWeaponBase::Reload);
 	Item->ItemOwned.AddDynamic(this, &AWeaponBase::OnItemPicked);
 	Item->ItemDisowned.AddDynamic(this, &AWeaponBase::OnItemThrown);
+	
+}
+
+void AWeaponBase::Tick(float deltaTime)
+{
+	if (IsAuto)
+	{
+		Shoot();
+	}
 }
 
 void AWeaponBase::Shoot()
 {
-	if (!IsValid(ShooterEye))
-	{
-		FVector start;
-		FRotator dir;
-		Item->GetActorOwner()->GetActorEyesViewPoint(start, dir);
-		WeaponLogic->SemiShoot(start, dir.Vector());
-	}
-	else
-	{
-		WeaponLogic->StartAutoShoot(ShooterEye);
-	}
+	FVector start;
+	FRotator dir;
+	Item->GetActorOwner()->GetActorEyesViewPoint(start, dir);
+	WeaponLogic->SemiShoot(start, dir.Vector());
 }
 
 void AWeaponBase::ShootOnDir(const FVector& start, const FVector& dir)
@@ -78,47 +77,38 @@ void AWeaponBase::ItemAlreadyExists_Implementation(UItem* duplicateItem)
 	check(duplicateItem->GetOwner()->GetClass()->IsChildOf(GetClass()));
 	
 	auto weapon = CastChecked<AWeaponBase>(duplicateItem->GetOwner());
-	weapon->WeaponLogic->MaxAmmo += 30;
+	auto data = weapon->WeaponLogic->WeaponData;
+	weapon->WeaponLogic->CurrentAmmo = FMath::Max(data->MagAmmo, weapon->WeaponLogic->CurrentAmmo + data->MagAmmo);
 	weapon->Destroy();
 }
-
 void AWeaponBase::OnItemPicked()
 {
-	OnWeaponPicked(Item->GetActorOwner());
-	
+	auto owner = Item->GetActorOwner();
+	OnWeaponPicked(owner);
 }
 
 void AWeaponBase::OnWeaponPicked(const AActor* newOwner)
 {
-	if (auto player = Cast<AAbvaPlayer>(newOwner))
-	{
-		WeaponLogic->SetComponentTickEnabled(true);
-		auto hud = GetWorld()->GetFirstPlayerController()->GetHUD<AWeaponHud>();
-		check(hud);
-
-		AttachToComponent(player->WeaponLock, FAttachmentTransformRules::KeepRelativeTransform);
-		SetActorRelativeLocation(WeaponAttachOffset);
-
-		hud->IsWeaponPicked = true;
-	}
 }
 void AWeaponBase::OnItemThrown()
 {
-	auto hud = GetWorld()->GetFirstPlayerController()->GetHUD<AWeaponHud>();
-	if (Cast<AAbvaPlayer>(Item->GetActorOwner()) != nullptr)
-	{
-		WeaponLogic->SetComponentTickEnabled(false);
-		hud->IsWeaponPicked = false;
-	}
 
 }
 void AWeaponBase::Destroyed()
 {
 	Super::Destroyed();
-	
 }
 
 AActor* AWeaponBase::GetActorOwner() const
 {
 	return Item->GetActorOwner();
+}
+
+bool AWeaponBase::DoesPlayerOwnWeapon() const
+{
+	if (auto pawn = Cast<APawn>(GetActorOwner()))
+	{
+		return pawn->GetController() == GetWorld()->GetFirstPlayerController();
+	}
+	return false;
 }

@@ -67,6 +67,7 @@ bool UItemManager::ChangeItem(int IndexOffset)
 
 		CurrentItem = GetActiveItemArray()[CurrentItemIndex];
 		CurrentItem->ActivateItem();
+		ItemEquippedEvent.Broadcast(CurrentItemIndex);
 		return true;
 	}
 
@@ -104,8 +105,8 @@ void UItemManager::AddItem(UItem* Item)
 			CurrentItem = Item;
 			CurrentItemType = Item->ItemType;
 			Item->ActivateItem();
+			ItemEquippedEvent.Broadcast(GetActiveItemArray().Num() - 1);
 		}
-		ItemEquippedEvent.Broadcast(GetActiveItemArray().Num() - 1);
 	}
 }
 

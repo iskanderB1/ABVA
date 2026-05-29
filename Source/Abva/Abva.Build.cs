@@ -8,6 +8,7 @@ public class Abva : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "AIModule","InputCore", "EnhancedInput"});
+		PublicDependencyModuleNames.AddRange(
+			new string[] { "Core", "CoreUObject", "Engine", "AIModule","InputCore", "EnhancedInput", "UMG", "Slate", "SlateCore"});
 	}
 }

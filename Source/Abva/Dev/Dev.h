@@ -74,8 +74,8 @@ namespace Dev
 
 			if (traceResult)
 			{
-				DrawDebugDirectionalArrow(world, start, result.ImpactPoint, 1, FColor::Green, false, 5, 5);
-				DrawDebugDirectionalArrow(world, result.ImpactPoint, end, 1, FColor::Red, false, 5, 5);
+				DrawDebugDirectionalArrow(world, start, result.ImpactPoint, 1, FColor::Red, false, 5, 5);
+				DrawDebugDirectionalArrow(world, result.ImpactPoint, end, 1, FColor::Green, false, 5, 5);
 				DrawDebugPoint(world, result.ImpactPoint, 5, FColor::Green, false, 5, 5);
 			}
 			else
