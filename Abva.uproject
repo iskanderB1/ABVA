@@ -36,19 +36,11 @@
 			"Enabled": true
 		},
 		{
-			"Name": "N10XSourceCodeAccess",
-			"Enabled": false
-		},
-		{
 			"Name": "GameplayBehaviors",
 			"Enabled": true
 		},
 		{
 			"Name": "GameplayBehaviorSmartObjects",
-			"Enabled": true
-		},
-		{
-			"Name": "MetaHumanCharacter",
 			"Enabled": true
 		}
 	]
